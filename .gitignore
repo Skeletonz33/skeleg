@@ -1,0 +1,5 @@
+.trash
+build
+build/*
+.vscode
+src/main.c

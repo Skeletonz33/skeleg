@@ -1,6 +1,9 @@
-//#define __DEBUG
-#include "debug.h"
 #include "triangle.h"
+
+#define EPSILON															1e-4
+
+typedef float vec4f __attribute__((vector_size(16)));
+typedef dword vec4u __attribute__((vector_size(16)));
 
 static inline float dotf(float x0, float y0, float x1, float y1) {
 	return x0 * x1 + y0 * y1;
@@ -68,14 +71,12 @@ static inline bool in_tri(const struct sg_triangle* tri, float fx, float fy) {
 	float cx = vertc->x;
 	float cy = vertc->y;
 
-	logf("skeleg: triangle.c: (static) in_tri: ax=%0.5f, ay=%0.5f, bx=%0.5f, by=%0.5f, cx=%0.5f, cy=%0.5f\n", ax, ay, bx, by, cx, cy);
-
 	float sa = signf(fx, fy, ax, ay, bx, by);
 	float sb = signf(fx, fy, bx, by, cx, cy);
 	float sc = signf(fx, fy, cx, cy, ax, ay);
 
-	bool neg = (sa < 0.0f) || (sb < 0.0f) || (sc < 0.0f);
-	bool pos = (sa > 0.0f) || (sb > 0.0f) || (sc > 0.0f);
+	bool neg = (sa < EPSILON) || (sb < EPSILON) || (sc < EPSILON);
+	bool pos = (sa > -EPSILON) || (sb > -EPSILON) || (sc > -EPSILON);
 
 	return !(neg && pos);
 }
@@ -84,8 +85,18 @@ static inline float absf(float x) {
 	return x < 0 ? -x : x;
 }
 
+static inline vec4f vabsf(vec4f vec) {
+	vec4u vecu = (vec4u)vec;
+	return (vec4f)(vecu & 0x7FFFFFFF);
+}
+
 static inline float tri_area(float ax, float ay, float bx, float by, float cx, float cy) {
-	return absf(ax * (by - cy) + bx * (cy - ay) + cx * (ay - by)) / 2.0f;
+	vec4f vecd = {by - cy, cy - ay, ay - by, 0.0f};
+	vec4f vecs = {ax, bx, cx, 0.0f};
+	vecd *= vecs;
+
+	float area = vecd[0] + vecd[1] + vecd[2];
+	return absf(area) * 0.5f;
 }
 
 static inline float tri_tarea(const struct sg_triangle* tri) {
@@ -103,7 +114,22 @@ static inline float tri_tarea(const struct sg_triangle* tri) {
 	return tri_area(ax, ay, bx, by, cx, cy);
 }
 
-static inline void interp(struct sg_frgba* dst, const struct sg_triangle* tri, float area, float fx, float fy) {
+static inline vec4f vtri_area(vec4f vecax, vec4f vecay, vec4f vecbx, vec4f vecby, vec4f veccx, vec4f veccy) {
+	vec4f vecbc = vecby - veccy;
+	vec4f vecca = veccy - vecay;
+	vec4f vecab = vecay - vecby;
+
+	vecbc *= vecax;
+	vecca *= vecbx;
+	vecab *= veccx;
+
+	vec4f vecs = vecbc + vecca + vecab;
+	vecs = vabsf(vecs);
+
+	return vecs * 0.5f;
+}
+
+static inline void interp(struct sg_frgba* dst, const struct sg_triangle* tri, float invarea, float fx, float fy) {
 	const struct sg_vert* verta = tri->verts;
 	const struct sg_vert* vertb = tri->verts + 1;
 	const struct sg_vert* vertc = tri->verts + 2;
@@ -115,22 +141,38 @@ static inline void interp(struct sg_frgba* dst, const struct sg_triangle* tri, f
 	float cx = vertc->x;
 	float cy = vertc->y;
 
-	float bcp = tri_area(bx, by, cx, cy, fx, fy);
-	float acp = tri_area(ax, ay, cx, cy, fx, fy);
-	float abp = tri_area(ax, ay, bx, by, fx, fy);
+	vec4f vecax = {bx, ax, ax, 0.0f};
+	vec4f vecay = {by, ay, ay, 0.0f};
+	vec4f vecbx = {cx, cx, bx, 0.0f};
+	vec4f vecby = {cy, cy, by, 0.0f};
+	vec4f veccx = {fx, fx, fx, 0.0f};
+	vec4f veccy = {fy, fy, fy, 0.0f};
 
-	float wa = bcp / area;
-	float wb = acp / area;
-	float wc = abp / area;
+	vec4f vecw = vtri_area(vecax, vecay, vecbx, vecby, veccx, veccy);
+	vecw *= invarea;
+
+	float wa = vecw[0];
+	float wb = vecw[1];
+	float wc = vecw[2];
 
 	struct sg_frgba ca = verta->color;
 	struct sg_frgba cb = vertb->color;
 	struct sg_frgba cc = vertc->color;
 
-	dst->r = ca.r * wa + cb.r * wb + cc.r * wc;
-	dst->g = ca.g * wa + cb.g * wb + cc.g * wc;
-	dst->b = ca.b * wa + cb.b * wb + cc.b * wc;
-	dst->a = 1.0f;
+	vec4f veca = {ca.r, ca.g, ca.b, ca.a};
+	vec4f vecb = {cb.r, cb.g, cb.b, cb.a};
+	vec4f vecc = {cc.r, cc.g, cc.b, cc.a};
+
+	veca *= wa;
+	vecb *= wb;
+	vecc *= wc;
+
+	vec4f vecdst = veca + vecb + vecc;
+
+	dst->r = vecdst[0];
+	dst->g = vecdst[1];
+	dst->b = vecdst[2];
+	dst->a = vecdst[3];
 }
 
 bool sg_render(const struct sg_triangle* tri, struct sg_framebuf* fb) {
@@ -156,7 +198,7 @@ bool sg_render(const struct sg_triangle* tri, struct sg_framebuf* fb) {
 	float fdy;
 	get_step(fb, &fdx, &fdy);
 
-	float area = tri_tarea(tri);
+	float invarea = 1.0f / tri_tarea(tri);
 	for(dword j = ymin;j < ymax;j++) {
 		for(dword i = xmin;i < xmax;i++) {
 			if(!in_tri(tri, fi, fj)) {
@@ -164,8 +206,8 @@ bool sg_render(const struct sg_triangle* tri, struct sg_framebuf* fb) {
 			}
 
 			struct sg_frgba color;
-			interp(&color, tri, area, fi, fj);
-
+			interp(&color, tri, invarea, fi, fj);
+			
 			struct sg_rgba rgba;
 			sg_frgba2rgba(&rgba, &color);
 
@@ -174,8 +216,6 @@ bool sg_render(const struct sg_triangle* tri, struct sg_framebuf* fb) {
 			}
 
 			dword idx = SG_FB_INDEX(fb, i, j);
-			logf("skeleg: triangle.c: sg_render: idx=%u\n", idx);
-
 			((struct sg_rgba*)fb->buf)[idx] = rgba;
 
 			CONTINUE:

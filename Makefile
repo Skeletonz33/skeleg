@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -O2 -Wall -Werror -Wextra -Wstrict-prototypes -pedantic -Iinclude -std=c99
+CFLAGS=-c -O3 -Wall -Werror -Wextra -Wstrict-prototypes -pedantic -Iinclude -std=c99
 AR=ar
 AFLAGS=rcs
 LD=gcc

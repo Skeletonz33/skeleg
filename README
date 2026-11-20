@@ -1,4 +1,9 @@
-# SkeleG
-SkeleG is a CPU-based graphics library written in C.
+	SKELEG
+SkeleG is a software rasterizer written entirely in C, currently in version 0.1
 
-Documentation coming soon...
+WHAT CAN IT DO?
+	Just rendering triangles... with pretty color interpolation (barycentric interpolation), that's it
+
+HOW TO USE?
+	Compile with make all, this will spit out skeleg.a, link that statically to whatever program you're making that uses SkeleG
+	In your program, include skeleg.h

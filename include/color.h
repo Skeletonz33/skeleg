@@ -17,7 +17,7 @@ struct sg_frgba {
 	float a;
 };
 
-inline bool sg_rgba2frgba(struct sg_frgba* dst, const struct sg_rgba* src) {
+static inline bool sg_rgba2frgba(struct sg_frgba* dst, const struct sg_rgba* src) {
 	if(dst == NULL || src == NULL) return FALSE;
 
 	dst->r = (float)src->r / 255.0f;
@@ -28,7 +28,7 @@ inline bool sg_rgba2frgba(struct sg_frgba* dst, const struct sg_rgba* src) {
 	return TRUE;
 }
 
-inline bool sg_frgba2rgba(struct sg_rgba* dst, const struct sg_frgba* src) {
+static inline bool sg_frgba2rgba(struct sg_rgba* dst, const struct sg_frgba* src) {
 	if(dst == NULL || src == NULL) return FALSE;
 
 	dst->r = (byte)((float)src->r * 255.0f + 0.5f);
@@ -39,7 +39,7 @@ inline bool sg_frgba2rgba(struct sg_rgba* dst, const struct sg_frgba* src) {
 	return TRUE;
 }
 
-inline bool sg_rgba2bgra(struct sg_rgba* c) {
+static inline bool sg_rgba2bgra(struct sg_rgba* c) {
 	if(c == NULL) return FALSE;
 
 	c->r ^= c->b;

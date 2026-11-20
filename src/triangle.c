@@ -1,6 +1,26 @@
+/*
+ * triangle.c - handles triangle rendering
+ * Copyright (C) 2026  Skeletonz33
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see
+ * <https://www.gnu.org/licenses/>.
+ * Contact email: skeletonz33.skeleos@gmail.com
+ */
+
 #include "triangle.h"
 
-#define EPSILON															1e-4
+#define EPSILON															1e-6
 
 typedef float vec4f __attribute__((vector_size(16)));
 typedef dword vec4u __attribute__((vector_size(16)));

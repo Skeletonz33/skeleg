@@ -11,6 +11,8 @@ BUILD_DIR=build
 SRC=triangle.c
 OBJ=$(SRC:.c=.o)
 
+# TEST, TESTOBJ, TESTEXE, test and run can be ignored as they are only used for testing the library
+
 TEST=main.c
 TESTOBJ=$(TEST:.c=.o)
 TESTEXE=$(TEST:.c=.exe)

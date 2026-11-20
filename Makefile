@@ -8,7 +8,7 @@ LFLAGS=-mwindows -lgdi32 -luser32
 SOURCE_DIR=src
 BUILD_DIR=build
 
-SRC=
+SRC=triangle.c
 OBJ=$(SRC:.c=.o)
 
 TEST=main.c
@@ -16,6 +16,8 @@ TESTOBJ=$(TEST:.c=.o)
 TESTEXE=$(TEST:.c=.exe)
 
 LIB=skeleg.a
+
+LOG=log
 
 RM=del
 RFLAGS=/f /q
@@ -31,14 +33,12 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c
 $(BUILD_DIR)/$(LIB): $(OBJ:%=$(BUILD_DIR)/%)
 	$(AR) $(AFLAGS) $@ $^
 
-test:
-#	$(CC) $(CFLAGS) $(SOURCE_DIR)/$(TEST) -o $(BUILD_DIR)/$(TESTOBJ)
-#	$(LD) $(LFLAGS) $(BUILD_DIR)/$(TESTOBJ) $(BUILD_DIR)/$(LIB) -o $(BUILD_DIR)/$(TESTEXE)
+test: $(BUILD_DIR)/$(LIB)
 	$(CC) $(CFLAGS) $(SOURCE_DIR)/$(TEST) -o $(BUILD_DIR)/$(TESTOBJ)
-	$(LD) $(LFLAGS) $(BUILD_DIR)/$(TESTOBJ) -o $(BUILD_DIR)/$(TESTEXE)
+	$(LD) $(LFLAGS) $(BUILD_DIR)/$(TESTOBJ) $(BUILD_DIR)/$(LIB) -o $(BUILD_DIR)/$(TESTEXE)
 
 run:
-	"$(BUILD_DIR)/$(TESTEXE)"
+	"$(BUILD_DIR)/$(TESTEXE)" 2> $(LOG)
 
 clean:
 	$(RM) $(RFLAGS) $(BUILD_DIR)\*

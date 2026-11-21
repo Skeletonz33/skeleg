@@ -4,3 +4,4 @@ build/*
 .vscode
 src/main.c
 log
+.ghkey
